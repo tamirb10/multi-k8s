@@ -21,9 +21,9 @@ before_install:
 script: 
   - docker run -e CI=true tamirb915/react-test npm test
 
-delpoy:
+deploy:
   provider: script
   script: bash ./deploy.sh
   on:
-  branch: master
+    branch: master
 

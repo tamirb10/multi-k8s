@@ -4,13 +4,12 @@ metadata:
   name: ingress-service
   annotations:
     kubernetes.io/ingress.class: nginx
-    # הוספת ה-Rewrite הזה היא קריטית אם השרת שלך לא מצפה למילה /api בתוך הקוד שלו
-    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    # הורדנו את ה-rewrite-target כדי למנוע עיוות נתיבים
 spec:
   rules:
     - http:
         paths:
-          # 1. קודם כל ה-API (הספציפי יותר)
+          # כל מה שמתחיל ב-api הולך לשרת כפי שהוא
           - path: /api
             pathType: Prefix
             backend:
@@ -18,8 +17,7 @@ spec:
                 name: server-cluster-ip-service
                 port:
                   number: 5000
-          
-          # 2. אחר כך ה-Client (הכללי)
+          # כל השאר הולך לקליינט
           - path: /
             pathType: Prefix
             backend:

@@ -10,17 +10,18 @@ spec:
   rules:
     - http:
         paths:
-          # כל מה שמתחיל ב-api יעבור לשרת, והמילה api תימחק מהנתיב שנשלח לשרת
-          - path: /api/?(.*)
-            pathType: ImplementationSpecific
+          # 1. קודם כל ה-API (הספציפי יותר)
+          - path: /api
+            pathType: Prefix
             backend:
               service:
                 name: server-cluster-ip-service
                 port:
                   number: 5000
-          # כל שאר הבקשות ילכו לקליינט
-          - path: /?(.*)
-            pathType: ImplementationSpecific
+          
+          # 2. אחר כך ה-Client (הכללי)
+          - path: /
+            pathType: Prefix
             backend:
               service:
                 name: client-cluster-ip-service

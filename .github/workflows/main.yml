@@ -1,0 +1,40 @@
+name: Deploy MultiK8s
+on:
+  push:
+    branches:
+      - master  # או master, תלוי מה ה-branch שלך
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      # 1. טסטים (כמו ה-script בטראוויס)
+      - name: Run Tests
+        run: |
+          docker build -t tamirb915/react-test -f ./client/Dockerfile.dev ./client
+          docker run -e CI=true tamirb915/react-test npm test
+
+      # 2. התחברות לגוגל (במקום ה-openssl וה-gcloud auth)
+      - uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      # 3. הגדרת ה-SDK (במקום ה-before_install)
+      - name: Set up GKE credentials
+        uses: google-github-actions/get-gke-credentials@v1
+        with:
+          cluster_name: multi-k8s
+          location: us-central1
+          project_id: multi-k8s-491108
+
+      # 4. התחברות לדוקר
+      - name: Docker Login
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_ID }}" --password-stdin
+
+      # 5. הרצת הסקריפט (בדיוק כמו בטראוויס!)
+      - name: Deploy
+        run: |
+          export SHA=${{ github.sha }}
+          bash ./deploy.sh

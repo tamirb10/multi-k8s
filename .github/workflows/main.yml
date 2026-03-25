@@ -33,7 +33,7 @@ jobs:
       - name: Docker Login
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_ID }}" --password-stdin
 
-      # 5. הרצת הסקריפט (בדיוק כמו בטראוויס!)
+   
       - name: Deploy
         run: |
           export SHA=${{ github.sha }}

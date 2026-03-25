@@ -4,22 +4,23 @@ metadata:
   name: ingress-service
   annotations:
     kubernetes.io/ingress.class: nginx
-    # הורדנו את ה-rewrite-target כדי למנוע עיוות נתיבים
+    # זה התיקון הקריטי: הוא לוקח את כל מה שאחרי ה-api ומעביר רק אותו
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
 spec:
   rules:
     - http:
         paths:
-          # כל מה שמתחיל ב-api הולך לשרת כפי שהוא
-          - path: /api
-            pathType: Prefix
+          # שים לב לסוגריים - הם אומרים ל-Ingress "תשמור את החלק הזה כ-$1"
+          - path: /api/?(.*)
+            pathType: ImplementationSpecific
             backend:
               service:
                 name: server-cluster-ip-service
                 port:
                   number: 5000
-          # כל השאר הולך לקליינט
-          - path: /
-            pathType: Prefix
+          # הקליינט תמיד בסוף, כ-Catch-all
+          - path: /?(.*)
+            pathType: ImplementationSpecific
             backend:
               service:
                 name: client-cluster-ip-service

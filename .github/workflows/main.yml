@@ -50,15 +50,16 @@ jobs:
         uses: azure/setup-helm@v3
         with:
           version: 'latest'
-#6. התקנת ה-Load Balancer Controller (ה"שוער")
+
+# 6. התקנת ה-Load Balancer Controller
       - name: Get VPC ID and Install Controller
         run: |
-          # 1. שאילתה לאמזון: "מה ה-VPC ID של הקלאסטר שנקרא multi-k8s-cluster?"
           VPC_ID=$(aws eks describe-cluster --name multi-k8s-cluster --query "cluster.resourcesVpcConfig.vpcId" --output text)
-          
           echo "Detected VPC ID: $VPC_ID"
 
-          # 2. הרצת ה-Helm עם ה-ID שמשכנו הרגע
+          helm repo add eks https://aws.github.io/eks-charts
+          helm repo update
+
           helm upgrade --install aws-load-balancer-controller eks/aws-load-balancer-controller \
             -n kube-system \
             --set clusterName=multi-k8s-cluster \
@@ -68,15 +69,14 @@ jobs:
             --set vpcId=$VPC_ID \
             --set region=${{ secrets.AWS_REGION }}
 
-      # 7. פריסה בעזרת Helm (Deploy)
+      # 8. פריסת האפליקציה (שים לב לנתיב ./helm)
       - name: Deploy with Helm
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           SHA: ${{ github.sha }}
         run: |
-          helm upgrade --install multi-k8s-release ./charts/multi-k8s \
+          # החלפנו ל-./helm כי זה שם התיקייה שלך
+          helm upgrade --install multi-k8s-release ./helm \
             --set client.image=$ECR_REGISTRY/multi-client:$SHA \
             --set server.image=$ECR_REGISTRY/multi-server:$SHA \
-            --set worker.image=$ECR_REGISTRY/multi-worker:$SHA \
-            --wait
-            
+            --set worker.image=$ECR_REGISTRY/multi-worker:$SHA

@@ -71,7 +71,7 @@ jobs:
 
           
           echo "Waiting for the controller to be ready..."
-          sleep 6
+          sleep 60
       # 8. פריסת האפליקציה (שים לב לנתיב ./helm)
       - name: Deploy with Helm
         env:

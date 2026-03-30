@@ -70,8 +70,7 @@ jobs:
             --set region=${{ secrets.AWS_REGION }}
 
           
-          echo "Waiting for the controller to be ready..."
-          sleep 60
+          kubectl wait --namespace kube-system --for=condition=ready pod --selector=app.kubernetes.io/name=aws-load-balancer-controller --timeout=180s
       # 8. פריסת האפליקציה (שים לב לנתיב ./helm)
       - name: Deploy with Helm
         env:

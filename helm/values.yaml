@@ -1,0 +1,28 @@
+client:
+  image: ""
+  replicas: 1
+  port: 3000
+
+server:
+  image: ""
+  replicas: 1
+  port: 5000
+
+worker:
+  image: ""
+  replicas: 1
+
+redis:
+  image: redis
+  replicas: 1
+  port: 6379
+
+postgres:
+  image: postgres
+  replicas: 1
+  port: 5432
+  storage: 2Gi
+  user: postgres
+  database: postgres
+  secretName: pgpassword
+  secretKey: PGPASSWORD

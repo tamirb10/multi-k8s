@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-server
+spec:
+  replicas: {{ .Values.server.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+      component: server
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}
+        component: server
+    spec:
+      containers:
+        - name: server
+          image: {{ .Values.server.image }}
+          ports:
+            - containerPort: {{ .Values.server.port }}
+          env:
+            - name: REDIS_HOST
+              value: {{ .Release.Name }}-redis-cluster-ip-service
+            - name: REDIS_PORT
+              value: {{ .Values.redis.port | quote }}
+            - name: PGUSER
+              value: {{ .Values.postgres.user }}
+            - name: PGHOST
+              value: {{ .Release.Name }}-postgres-cluster-ip-service
+            - name: PGPORT
+              value: {{ .Values.postgres.port | quote }}
+            - name: PGDATABASE
+              value: {{ .Values.postgres.database }}
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgres.secretName }}
+                  key: {{ .Values.postgres.secretKey }}

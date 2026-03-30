@@ -1,0 +1,31 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}-ingress-service
+  annotations:
+    # 1. אומרים לקונטרולר של אמזון - "זה בשבילך!"
+    kubernetes.io/ingress.class: alb
+    # 2. אומרים לאמזון ליצור Load Balancer חיצוני (Internet Facing)
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    # 3. קריטי ל-Fargate: אומר ל-ALB לדבר ישירות עם ה-IP של הפודים
+    alb.ingress.kubernetes.io/target-type: ip
+    # 4. (אופציונלי) אם אתה רוצה שהשרת יקבל את הנתיב המקורי בלי /api
+    alb.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /api
+            pathType: Prefix # שינינו ל-Prefix, הרבה יותר יציב ב-AWS
+            backend:
+              service:
+                name: {{ .Release.Name }}-server-cluster-ip-service
+                port:
+                  number: {{ .Values.server.port }}
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Release.Name }}-client-cluster-ip-service
+                port:
+                  number: {{ .Values.client.port }}

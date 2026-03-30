@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-redis-cluster-ip-service
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ .Release.Name }}
+    component: redis
+  ports:
+    - port: {{ .Values.redis.port }}
+      targetPort: {{ .Values.redis.port }}

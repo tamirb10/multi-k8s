@@ -1,0 +1,82 @@
+name: Deploy MultiK8s to AWS
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      # 1. התחברות ל-AWS
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # 2. התחברות ל-Amazon ECR
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      # 3. בנייה ודחיפה של ה-Images (Client, Server, Worker)
+      - name: Build and push all images
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          SHA: ${{ github.sha }}
+        run: |
+          # Client
+          docker build -t $ECR_REGISTRY/multi-client:latest -t $ECR_REGISTRY/multi-client:$SHA ./client
+          docker push $ECR_REGISTRY/multi-client --all-tags
+          
+          # Server
+          docker build -t $ECR_REGISTRY/multi-server:latest -t $ECR_REGISTRY/multi-server:$SHA ./server
+          docker push $ECR_REGISTRY/multi-server --all-tags
+
+          # Worker (החלק שהיה חסר!)
+          docker build -t $ECR_REGISTRY/multi-worker:latest -t $ECR_REGISTRY/multi-worker:$SHA ./worker
+          docker push $ECR_REGISTRY/multi-worker --all-tags
+
+      # 4. עדכון ה-Kubeconfig
+      - name: Update kubeconfig
+        run: aws eks update-kubeconfig --name multi-k8s-cluster --region ${{ secrets.AWS_REGION }}
+
+      # 5. התקנת Helm (כדי שהמחשב של GitHub יכיר את הפקודה)
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: 'latest'
+#6. התקנת ה-Load Balancer Controller (ה"שוער")
+      - name: Get VPC ID and Install Controller
+        run: |
+          # 1. שאילתה לאמזון: "מה ה-VPC ID של הקלאסטר שנקרא multi-k8s-cluster?"
+          VPC_ID=$(aws eks describe-cluster --name multi-k8s-cluster --query "cluster.resourcesVpcConfig.vpcId" --output text)
+          
+          echo "Detected VPC ID: $VPC_ID"
+
+          # 2. הרצת ה-Helm עם ה-ID שמשכנו הרגע
+          helm upgrade --install aws-load-balancer-controller eks/aws-load-balancer-controller \
+            -n kube-system \
+            --set clusterName=multi-k8s-cluster \
+            --set serviceAccount.create=false \
+            --set serviceAccount.name=aws-load-balancer-controller \
+            --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"=arn:aws:iam::650251704539:role/AmazonEKSLoadBalancerControllerRole \
+            --set vpcId=$VPC_ID \
+            --set region=${{ secrets.AWS_REGION }}
+
+      # 7. פריסה בעזרת Helm (Deploy)
+      - name: Deploy with Helm
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          SHA: ${{ github.sha }}
+        run: |
+          helm upgrade --install multi-k8s-release ./charts/multi-k8s \
+            --set client.image=$ECR_REGISTRY/multi-client:$SHA \
+            --set server.image=$ECR_REGISTRY/multi-server:$SHA \
+            --set worker.image=$ECR_REGISTRY/multi-worker:$SHA \
+            --wait
+            

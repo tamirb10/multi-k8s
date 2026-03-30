@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-postgres-cluster-ip-service
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ .Release.Name }}
+    component: postgres
+  ports:
+    - port: {{ .Values.postgres.port }}
+      targetPort: {{ .Values.postgres.port }}

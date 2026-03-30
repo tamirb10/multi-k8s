@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-worker
+spec:
+  replicas: {{ .Values.worker.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+      component: worker
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}
+        component: worker
+    spec:
+      containers:
+        - name: worker
+          image: {{ .Values.worker.image }}
+          env:
+            - name: REDIS_HOST
+              value: {{ .Release.Name }}-redis-cluster-ip-service
+            - name: REDIS_PORT
+              value: {{ .Values.redis.port | quote }}

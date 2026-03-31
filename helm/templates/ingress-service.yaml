@@ -3,7 +3,8 @@ kind: Ingress
 metadata:
   name: {{ .Release.Name }}-ingress-service
   annotations:
-   
+    # 1. אומרים לקונטרולר של אמזון - "זה בשבילך!"
+    kubernetes.io/ingress.class: alb
     # 2. אומרים לאמזון ליצור Load Balancer חיצוני (Internet Facing)
     alb.ingress.kubernetes.io/scheme: internet-facing
     # 3. קריטי ל-Fargate: אומר ל-ALB לדבר ישירות עם ה-IP של הפודים

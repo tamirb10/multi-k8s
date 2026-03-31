@@ -21,7 +21,7 @@ module "eks" {
 
   cluster_name    = "multi-k8s-cluster"
   cluster_version = "1.31"
-
+  cluster_endpoint_public_access = true
   bootstrap_self_managed_addons = false
   create_kms_key              = false
   cluster_encryption_config   = {}
